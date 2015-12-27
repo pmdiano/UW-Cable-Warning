@@ -23,3 +23,6 @@
 *.exe
 *.out
 *.app
+
+# Other
+*.png

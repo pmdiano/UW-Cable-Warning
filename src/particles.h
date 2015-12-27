@@ -1,5 +1,7 @@
 /** @file
     Definitions related to tracking cable line with particle filtering
+
+    Reference: http://blogs.oregonstate.edu/hess/code/particles/
 */
 
 #ifndef __PARTICLES_H__

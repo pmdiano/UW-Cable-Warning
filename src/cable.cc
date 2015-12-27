@@ -984,6 +984,7 @@ void testOneDataset(
         cable = NULL;
         prevNum = num;
         prevScore = score;
+        newCables = NULL;
 
         // rho track free
         freeLineArray(rhoCablePrev, rhoNumPrev);
@@ -997,7 +998,7 @@ void testOneDataset(
 
 #ifdef SHOW_IMAGE
         // opencv data
-        cvWaitKey(0);
+        //cvWaitKey();
         cvReleaseImage(&oriImg);
         cvReleaseImage(&dstImg);
         cvReleaseImage(&oriImg1);
@@ -1043,82 +1044,84 @@ void testOneDataset(
     if (theta_particles) theta_free_particles(theta_particles, THETA_NUM_PARTICLES);
     theta_particles = NULL;
 }
-void testAll(int in);
 
+void testAll(int start, int num);
 
 int main(int argc, const char* argv[])
 {
     //tester();
     //main1();
-    int i;
-    i = atoi(argv[1]);
-    if (argc > 2)
-        TOTAL_START = atoi(argv[2]);
+    int start, num;
+    start = atoi(argv[1]);
+    num = atoi(argv[2]);
     if (argc > 3)
-        PARTICLE_START = atoi(argv[3]);
+        TOTAL_START = atoi(argv[3]);
+    if (argc > 4)
+        PARTICLE_START = atoi(argv[4]);
     //srand(time(NULL));
-    testAll(i);
+    testAll(start, num);
 
     return 0;
 }
 
-void testAll(int in)
+void testAll(int start, int num)
 {
     const char* baseName[] = {
-        "F:\\UW_Sun\\Datasets\\B_20090831T134940d1_A\\Prm_B_20090831T134940d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090831T135234d1_C\\Prm_B_20090831T135234d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090901T164646d1_D\\Prm_B_20090901T164646d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090901T165047d1_B\\Prm_B_20090901T165047d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090902T101724d1_G\\Prm_B_20090902T101724d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090902T102617d1_E\\Prm_B_20090902T102617d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090902T103246d1_F\\Prm_B_20090902T103246d1.dat",
-        "F:\\UW_Sun\\Datasets\\B_20090902T103810d1_H\\Prm_B_20090902T103810d1.dat",
-        "F:\\UW_Sun\\Datasets\\SBc20110902102717c1_I\\Prm_SBc20110902102717c1.dat",
-        "F:\\UW_Sun\\Datasets\\SBc20110902104628c1_J\\Prm_SBc20110902104628c1.dat",
-        "F:\\UW_Sun\\Datasets\\CFa20110929162847c1_K\\Prm_CFa20110929162847c1.dat",
-        "F:\\UW_Sun\\Datasets\\CFb20110930111304c1_L\\Prm_CFb20110930111304c1.dat",
-        "F:\\UW_Sun\\Datasets\\CFb20110930114159c1_M\\Prm_CFb20110930114159c1.dat",
-        "F:\\UW_Sun\\Datasets\\CFd20111004141759c1_N\\Prm_CFd20111004141759c1.dat"};
+        "../Datasets/B_20090831T134940d1_A/Prm_B_20090831T134940d1.dat",
+        "../Datasets/B_20090831T135234d1_C/Prm_B_20090831T135234d1.dat",
+        "../Datasets/B_20090901T164646d1_D/Prm_B_20090901T164646d1.dat",
+        "../Datasets/B_20090901T165047d1_B/Prm_B_20090901T165047d1.dat",
+        "../Datasets/B_20090902T101724d1_G/Prm_B_20090902T101724d1.dat",
+        "../Datasets/B_20090902T102617d1_E/Prm_B_20090902T102617d1.dat",
+        "../Datasets/B_20090902T103246d1_F/Prm_B_20090902T103246d1.dat",
+        "../Datasets/B_20090902T103810d1_H/Prm_B_20090902T103810d1.dat",
+        "../Datasets/SBc20110902102717c1_I/Prm_SBc20110902102717c1.dat",
+        "../Datasets/SBc20110902104628c1_J/Prm_SBc20110902104628c1.dat",
+        "../Datasets/CFa20110929162847c1_K/Prm_CFa20110929162847c1.dat",
+        "../Datasets/CFb20110930111304c1_L/Prm_CFb20110930111304c1.dat",
+        "../Datasets/CFb20110930114159c1_M/Prm_CFb20110930114159c1.dat",
+        "../Datasets/CFd20111004141759c1_N/Prm_CFd20111004141759c1.dat"
+    };
 
     const char* eachNameBase[] = {
-        "F:\\UW_Sun\\Datasets\\B_20090831T134940d1_A\\B_20090831T134940d",
-        "F:\\UW_Sun\\Datasets\\B_20090831T135234d1_C\\B_20090831T135234d",
-        "F:\\UW_Sun\\Datasets\\B_20090901T164646d1_D\\B_20090901T164646d",
-        "F:\\UW_Sun\\Datasets\\B_20090901T165047d1_B\\B_20090901T165047d",
-        "F:\\UW_Sun\\Datasets\\B_20090902T101724d1_G\\B_20090902T101724d",
-        "F:\\UW_Sun\\Datasets\\B_20090902T102617d1_E\\B_20090902T102617d",
-        "F:\\UW_Sun\\Datasets\\B_20090902T103246d1_F\\B_20090902T103246d",
-        "F:\\UW_Sun\\Datasets\\B_20090902T103810d1_H\\B_20090902T103810d",
-        "F:\\UW_Sun\\Datasets\\SBc20110902102717c1_I\\SBc20110902102717c",
-        "F:\\UW_Sun\\Datasets\\SBc20110902104628c1_J\\SBc20110902104628c",
-        "F:\\UW_Sun\\Datasets\\CFa20110929162847c1_K\\CFa20110929162847c",
-        "F:\\UW_Sun\\Datasets\\CFb20110930111304c1_L\\CFb20110930111304c",
-        "F:\\UW_Sun\\Datasets\\CFb20110930114159c1_M\\CFb20110930114159c",
-        "F:\\UW_Sun\\Datasets\\CFd20111004141759c1_N\\CFd20111004141759c"};
-
+        "../Datasets/B_20090831T134940d1_A/B_20090831T134940d",
+        "../Datasets/B_20090831T135234d1_C/B_20090831T135234d",
+        "../Datasets/B_20090901T164646d1_D/B_20090901T164646d",
+        "../Datasets/B_20090901T165047d1_B/B_20090901T165047d",
+        "../Datasets/B_20090902T101724d1_G/B_20090902T101724d",
+        "../Datasets/B_20090902T102617d1_E/B_20090902T102617d",
+        "../Datasets/B_20090902T103246d1_F/B_20090902T103246d",
+        "../Datasets/B_20090902T103810d1_H/B_20090902T103810d",
+        "../Datasets/SBc20110902102717c1_I/SBc20110902102717c",
+        "../Datasets/SBc20110902104628c1_J/SBc20110902104628c",
+        "../Datasets/CFa20110929162847c1_K/CFa20110929162847c",
+        "../Datasets/CFb20110930111304c1_L/CFb20110930111304c",
+        "../Datasets/CFb20110930114159c1_M/CFb20110930114159c",
+        "../Datasets/CFd20111004141759c1_N/CFd20111004141759c"
+    };
 
     const char* resultName[] = {
-        "F:\\UW_Sun\\1Aresult.txt",
-        "F:\\UW_Sun\\2Cresult.txt",
-        "F:\\UW_Sun\\3Dresult.txt",
-        "F:\\UW_Sun\\4Bresult.txt",
-        "F:\\UW_Sun\\5Gresult.txt",
-        "F:\\UW_Sun\\6Eresult.txt",
-        "F:\\UW_Sun\\7Fresult.txt",
-        "F:\\UW_Sun\\8Hresult.txt",
-        "F:\\UW_Sun\\9Iresult.txt",
-        "F:\\UW_Sun\\9Jresult.txt",
-        "F:\\UW_Sun\\9Kresult.txt",
-        "F:\\UW_Sun\\9Lresult.txt",
-        "F:\\UW_Sun\\9Mresult.txt",
-        "F:\\UW_Sun\\9Nresult.txt"};
+        "../test/1Aresult.txt",
+        "../test/2Cresult.txt",
+        "../test/3Dresult.txt",
+        "../test/4Bresult.txt",
+        "../test/5Gresult.txt",
+        "../test/6Eresult.txt",
+        "../test/7Fresult.txt",
+        "../test/8Hresult.txt",
+        "../test/9Iresult.txt",
+        "../test/9Jresult.txt",
+        "../test/9Kresult.txt",
+        "../test/9Lresult.txt",
+        "../test/9Mresult.txt",
+        "../test/9Nresult.txt"
+    };
 
     int tn[] = {49, 97, 149, 147, 148, 119, 118, 147, 1193, 1194, 297, 596, 1393, 596};
         
-    const char svmName[]  = "F:\\UW_Sun\\svm.dat";
+    const char svmName[]  = "./svm.dat";
 
-    int i;
-    for (i=in; i<in+1; i++)
+    for (int i=start; i<start+num; i++)
     {
         testOneDataset(baseName[i], eachNameBase[i], svmName, tn[i], resultName[i]);
     }
