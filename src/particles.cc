@@ -1189,8 +1189,8 @@ void process_rtrackers(rtracker *rtracker_,
     int M, int N, int NC, int x0, svmData *svm, int margin)
 {
     rtracker *current = rtracker_;
-    rtracker *previous;
-    rparticle *rptsn;
+    rtracker *previous = NULL;
+    rparticle *rptsn = NULL;;
     double asso_s;  // associatio score
     int dataNum, i, j, ridx;
     double lineData[512];

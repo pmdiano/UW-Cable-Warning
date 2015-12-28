@@ -24,5 +24,16 @@
 *.out
 *.app
 
+# VS stuff
+.vs/*
+x64/*
+Debug/*
+*.opendb
+*.sdf
+*.ilk
+*.iobj
+*.pdb
+*.ipdb
+
 # Other
 *.png

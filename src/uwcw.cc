@@ -2070,7 +2070,7 @@ void showImageInt(int *data, int height, int width, double hFactor, double wFact
         int xsl = (width-1)/2;
         int l;
         IplImage *imgC = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, nCh);
-        cvCopyImage(img, imgC);
+        cvCopy(img, imgC);
         imgData = (uchar*)img->imageData;
         uchar *imgDataC = (uchar*)imgC->imageData;
         for (j=0; j<height; j++)
