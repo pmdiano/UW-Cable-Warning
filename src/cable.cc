@@ -4,7 +4,7 @@
 #include "util.h"
 using namespace std;
 
-#define SHOW_IMAGE
+//#define SHOW_IMAGE
 #define THETA_VOTE
 //#define PICK_MAX
 //#define THRESH_MAX
@@ -509,13 +509,6 @@ void paintCvImage(double *RP_dBm, IplImage *img, double magMin, double magMax, u
     {
         for (int j=0; j<width; j++)
         {
-            // dataD = *RP_dBm++;
-            // dataD -= magMin;
-            // dataD /= (magMax-magMin);
-            // dataD *= 63;
-            // dataI = (int)dataD;
-            // if (dataI<0) dataI = 0;
-            // if (dataI>63) dataI = 63;
             dataD = (*RP_dBm++ - magMin) / (magMax - magMin) * 63.;
             dataI = clip(dataD, 0, 63);
 
@@ -694,7 +687,7 @@ void testOneDataset(
         printf("reading %s\n", eachName);
         eachRead(eachName, &M, &N, &Ang_plot, &RP_dBm);
 
-#ifdef SHOW_IMAGE
+//#ifdef SHOW_IMAGE
         sprintf(oriName, "%s%s%d.bmp", eachNameBase, "ori_", FRAME_I);
         sprintf(resName, "%s%s%d.bmp", eachNameBase, "res_", FRAME_I);
         sprintf(threshName, "%s%s%d.bmp", eachNameBase, "thresh_", FRAME_I);
@@ -702,7 +695,7 @@ void testOneDataset(
         sprintf(houghName, "%s%s%d.bmp", eachNameBase, "hough_", FRAME_I);
         sprintf(thetaDetectName, "%s%s%d.bmp", eachNameBase, "thetaDetect_", FRAME_I);
         sprintf(rhoDetectName, "%s%s%d.bmp", eachNameBase, "rhoTrack_", FRAME_I);
-#endif
+//#endif
 
         if (M>4000)
             hFactor = 4;

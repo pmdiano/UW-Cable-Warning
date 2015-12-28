@@ -1056,6 +1056,16 @@ void computeFeature(double *data,       // input data
                     double *feature,    // output feature
                     int featSize)
 {
+    if (dataSize == 0)
+    {
+        // Why would dataSize be 0?
+        for (int i = 0; i < featSize; i++)
+        {
+            feature[i] = 0.0;
+        }
+        return;
+    }
+
     int i;
 
     double *specData, *autoData, *sortData;
