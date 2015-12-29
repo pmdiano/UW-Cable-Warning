@@ -35,5 +35,8 @@ Debug/*
 *.pdb
 *.ipdb
 
+# MATLAB
+*.mexmaci64
+
 # Other
 *.png
