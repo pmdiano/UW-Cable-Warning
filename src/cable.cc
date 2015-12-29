@@ -4,12 +4,12 @@
 #include "util.h"
 using namespace std;
 
-//#define SHOW_IMAGE
 #define THETA_VOTE
 //#define PICK_MAX
 //#define THRESH_MAX
 //#define REGION_FILL_TEST
 
+bool g_saveImage = false;
 
 unsigned char COLORMAP_JET[64][3]=
 {
@@ -171,82 +171,6 @@ void eachRead(const char* filename, int *M, int *N,
     fclose(fp);
     free(buf);
 }
-
-// TODO: CImg is not used
-/*
-// display an int image
-void dispIntImg(int **Img, int M, int N, const char *s)
-{
-    CImg<double> dispImg(N, M, 1, 1, 0);
-
-    for (int i=0; i<M; i++)
-    {
-        for (int j=0; j<N; j++)
-        {
-            dispImg(j,i) = double(Img[i][j]);
-        }
-    }
-
-    CImgDisplay disp(dispImg, s);
-    while (!disp.is_closed() && !disp.is_keyARROWDOWN())
-        disp.wait();
-}
-
-// display a double image
-void dispDoubleImg(double **Img, int M, int N, const char *s)
-{
-    CImg<double> dispImg(N, M, 1, 1, 0);
-
-    for (int i=0; i<M; i++)
-    {
-        for (int j=0; j<N; j++)
-        {
-            dispImg(j,i) = Img[i][j];
-        }
-    }
-
-    CImgDisplay disp(dispImg, s, 1);
-    while (!disp.is_keyARROWDOWN() && !disp.is_closed())
-        disp.wait();
-}
-
-// show lines overlay
-void showHoughLines(int **Img, int M, int N, double *lines, int num)
-{
-    const unsigned char color[] = {255, 255, 0};
-
-
-    CImg<unsigned char> dispImg(N, M, 1, 3, 0);
-    for (int i=0; i<M; i++)
-    {
-        for (int j=0; j<N; j++)
-        {
-            if (Img[i][j])
-            {
-                dispImg(j, i, 0, 1)=255;
-                dispImg(j, i, 0, 2)=255;
-                dispImg(j, i, 0, 0)=255;
-            }
-        }
-    }
-
-    // draw lines
-    for (int i=0; i<num; i++)
-    {
-        int x1=0;
-        int y1=(int)((lines[2*i]-x1*cos(lines[2*i+1]*UW_PI/180))/sin(lines[2*i+1]*UW_PI/180)+0.5);
-        int x2=N-1;
-        int y2=(int)((lines[2*i]-x2*cos(lines[2*i+1]*UW_PI/180))/sin(lines[2*i+1]*UW_PI/180)+0.5);
-        dispImg.draw_line(x1, y1, x2, y2, color);
-    }
-
-
-    CImgDisplay disp(dispImg);
-    while (!disp.is_closed() && !disp.is_keyARROWDOWN())
-        disp.wait();
-}
-*/
-// END TODO
 
 /*
 void showOverlayCurves(int **BWBscope, int M, int N, double *lines, int num,
@@ -618,13 +542,16 @@ void testOneDataset(
     const char  *eachNameBase,
     const char  *svmName,
     const int   tn,
-    const char  *resultName
+    const char  *resultName,
+    const char  *imageNameBase
     )
 {
     char eachName[256];
     char timeName[256];
     char oriName[256];
     char resName[256];
+    char particleName[256];
+    char particleResultName[256];
     int M, N, x0;
     int wFactor, hFactor;
     int j, num(0), prevNum(0);
@@ -652,14 +579,8 @@ void testOneDataset(
     sprintf(timeName, "%s%s", resultName, "-time.txt");
     pTime = fopen(timeName, "w");
 
-#ifdef SHOW_IMAGE
-    //cvNamedWindow("UWCW:original");
-    //cvNamedWindow("UWCW:result");
-    //cvNamedWindow("UWCW:particle");
-    //cvNamedWindow("UWCW:particle_result");
-#endif
     particle *ptcs = NULL, *ptcsn = NULL;
-    
+
     int CABLE_IDX = 0;  // 4: 10082, 0; 3: 10120, 2; 0: 10001, 7; 6: 10031, 8
     cableLine *newCables = NULL;
     int maxidx = 0;
@@ -687,15 +608,15 @@ void testOneDataset(
         printf("reading %s\n", eachName);
         eachRead(eachName, &M, &N, &Ang_plot, &RP_dBm);
 
-//#ifdef SHOW_IMAGE
-        sprintf(oriName, "%s%s%d.bmp", eachNameBase, "ori_", FRAME_I);
-        sprintf(resName, "%s%s%d.bmp", eachNameBase, "res_", FRAME_I);
-        sprintf(threshName, "%s%s%d.bmp", eachNameBase, "thresh_", FRAME_I);
-        sprintf(transName, "%s%s%d.bmp", eachNameBase, "trans_", FRAME_I);
-        sprintf(houghName, "%s%s%d.bmp", eachNameBase, "hough_", FRAME_I);
-        sprintf(thetaDetectName, "%s%s%d.bmp", eachNameBase, "thetaDetect_", FRAME_I);
-        sprintf(rhoDetectName, "%s%s%d.bmp", eachNameBase, "rhoTrack_", FRAME_I);
-//#endif
+        sprintf(oriName, "%s%s%d.bmp", imageNameBase, "_ori_", FRAME_I);
+        sprintf(resName, "%s%s%d.bmp", imageNameBase, "_res_", FRAME_I);
+        sprintf(threshName, "%s%s%d.bmp", imageNameBase, "_thresh_", FRAME_I);
+        sprintf(transName, "%s%s%d.bmp", imageNameBase, "_trans_", FRAME_I);
+        sprintf(houghName, "%s%s%d.bmp", imageNameBase, "_hough_", FRAME_I);
+        sprintf(thetaDetectName, "%s%s%d.bmp", imageNameBase, "_thetaDetect_", FRAME_I);
+        sprintf(rhoDetectName, "%s%s%d.bmp", imageNameBase, "_rhoTrack_", FRAME_I); // This is the final result
+        sprintf(particleName, "%s%s%d.bmp", imageNameBase, "_particle_", FRAME_I);
+        sprintf(particleResultName, "%s%s%d.bmp", imageNameBase, "_particleResult_", FRAME_I);
 
         if (M>4000)
             hFactor = 4;
@@ -710,19 +631,21 @@ void testOneDataset(
         else
             wFactor = 4;
 
-#ifdef SHOW_IMAGE
-        // show original data
-        IplImage *oriImg = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-        paintCvImage(RP_dBm, oriImg, MagMin, MagMax, COLORMAP_JET);
-        IplImage *dstImg = cvCreateImage(cvSize(N*wFactor,M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(oriImg, dstImg);
-        if (Ang_plot[0]<0)
-            cvFlip(dstImg, NULL, 1);
-        cvFlip(dstImg);
-        //cvShowImage("UWCW:original", dstImg);
-        cvSaveImage(oriName, dstImg);
-        //continue;
-#endif
+        if (g_saveImage)
+        {
+            // save original data
+            IplImage *oriImg = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
+            paintCvImage(RP_dBm, oriImg, MagMin, MagMax, COLORMAP_JET);
+            IplImage *dstImg = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
+            cvResize(oriImg, dstImg);
+            if (Ang_plot[0] < 0)
+                cvFlip(dstImg, NULL, 1);
+            cvFlip(dstImg);
+            cvSaveImage(oriName, dstImg);
+
+            cvReleaseImage(&oriImg);
+            cvReleaseImage(&dstImg);
+        }
 
         printf("processing..");
 
@@ -735,57 +658,6 @@ void testOneDataset(
         SLICE_WIDTH = 64/wFactor;
         num = singleFrameDetect(RP_dBm, M, N, Ang_plot, Ang_endpt, MagMax, MagMin, &svm, 0, M, &cable, &x0, tCables, pTime);
 
-#ifdef THRESH_MAX
-        IplImage *maxImg = threshMax(RP_dBm, M, N, 35);
-        IplImage *dstMax = cvCreateImage(cvSize(N*wFactor,M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(maxImg, dstMax);
-        if (Ang_plot[0]<0)
-            cvFlip(dstMax, NULL, 1);
-        cvFlip(dstMax);
-        cvNamedWindow("UWCW:max");
-        cvShowImage("UWCW:max", dstMax);
-        cvSaveImage("max.png", dstMax);
-        cvWaitKey();
-        cvReleaseImage(&maxImg);
-        cvReleaseImage(&dstMax);
-        cvDestroyWindow("UWCW:max");
-#endif
-
-
-#ifdef REGION_FILL_TEST
-        IplImage *maxImg = regionFillMax(RP_dBm, M, N, M/16, 15);
-        IplImage *dstMax = cvCreateImage(cvSize(N*wFactor,M/hFactor), IPL_DEPTH_8U, 1);
-        cvResize(maxImg, dstMax);
-        if (Ang_plot[0]<0)
-            cvFlip(dstMax, NULL, 1);
-        cvFlip(dstMax);
-        cvNamedWindow("UWCW:regionFill");
-        cvShowImage("UWCW:regionFill", dstMax);
-        cvSaveImage("regionFill.png", dstMax);
-        cvWaitKey();
-        cvReleaseImage(&maxImg);
-        cvReleaseImage(&dstMax);
-        cvDestroyWindow("UWCW:regionFill");
-#endif
-
-
-#ifdef PICK_MAX
-        IplImage *maxImg = pickMax(RP_dBm, M, N, M/24, 10);
-        IplImage *dstMax = cvCreateImage(cvSize(N*wFactor,M/hFactor), IPL_DEPTH_8U, 1);
-        cvResize(maxImg, dstMax);
-        if (Ang_plot[0]<0)
-            cvFlip(dstMax, NULL, 1);
-        cvFlip(dstMax);
-        cvNamedWindow("UWCW:max");
-        cvShowImage("UWCW:max", dstMax);
-        cvSaveImage("max.png", dstMax);
-        cvWaitKey();
-        cvReleaseImage(&maxImg);
-        cvReleaseImage(&dstMax);
-        cvDestroyWindow("UWCW:max");
-#endif
-
-
         time2 = clock();
         timeb = double(time2-time1) / (double)CLOCKS_PER_SEC;
         /*
@@ -797,46 +669,49 @@ void testOneDataset(
         voteTheta(cable, num);
 #endif
 
-
         score = doubleFrameScore(cable, num, prevCable, prevNum, prevScore, FRAME_I==TOTAL_START);
         fprintf(pFile, "%f\n", score);
         fprintf(pTime, "%f\n", timeb);
 
-        
+        if (g_saveImage)
+        {
+            // show cable lines overlayyed
+            IplImage *oriImg1 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
+            paintCvImage(RP_dBm, oriImg1, MagMin, MagMax, COLORMAP_JET);
+            if (score >= .5) paintCables(oriImg1, cable, num, 0, 0, hFactor);
+            IplImage *dstImg1 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
+            cvResize(oriImg1, dstImg1);
+            if (Ang_plot[0] < 0)
+                cvFlip(dstImg1, NULL, 1);
+            cvFlip(dstImg1);
+            cvSaveImage(resName, dstImg1);
 
-#ifdef SHOW_IMAGE
-        // show cable lines overlayyed
-        IplImage *oriImg1 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-        paintCvImage(RP_dBm, oriImg1, MagMin, MagMax, COLORMAP_JET);
-        if (score>=.5) paintCables(oriImg1, cable, num, 0, 0, hFactor);
-        IplImage *dstImg1 = cvCreateImage(cvSize(N*wFactor,M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(oriImg1, dstImg1);
-        if (Ang_plot[0]<0)
-            cvFlip(dstImg1, NULL, 1);
-        cvFlip(dstImg1);
-        //cvShowImage(   "UWCW:result", dstImg1);
-        cvSaveImage(resName, dstImg1);
+            // theta tracking
+            IplImage *tImg1 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
+            paintCvImage(RP_dBm, tImg1, MagMin, MagMax, COLORMAP_JET);
+            paintCables(tImg1, tCables, 8, 0, 0, hFactor);
+            IplImage *tImg2 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
+            cvResize(tImg1, tImg2);
+            if (Ang_plot[0] < 0)
+                cvFlip(tImg2, NULL, 1);
+            cvFlip(tImg2);
+            cvSaveImage(thetaDetectName, tImg2);
 
-        // theta tracking
-        IplImage *tImg1 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-        paintCvImage(RP_dBm, tImg1, MagMin, MagMax, COLORMAP_JET);
-        paintCables(tImg1, tCables, 8, 0, 0, hFactor);
-        IplImage *tImg2 = cvCreateImage(cvSize(N*wFactor, M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(tImg1, tImg2);
-        if (Ang_plot[0]<0)
-            cvFlip(tImg2, NULL, 1);
-        cvFlip(tImg2);
-        cvSaveImage(thetaDetectName, tImg2);
-#endif
+            cvReleaseImage(&oriImg1);
+            cvReleaseImage(&dstImg1);
+            cvReleaseImage(&tImg1);
+            cvReleaseImage(&tImg2);
+        }
 
         // particle filtering
-#ifdef SHOW_IMAGE
-        IplImage *oriImg2, *dstImg2;
-        IplImage *oriImg3, *dstImg3;
-#endif
         ptcCables = (cableLine*)calloc(NUM_PARTICLES, sizeof(cableLine));
-        
-        //pResult = NULL;
+
+        if (pResult)
+        {
+            freeParticles(pResult, 1);
+            pResult = NULL;
+        }
+
         if (FRAME_I==PARTICLE_START)
         {
             fprintf(stdout, "\nPARTICLE FILTER initialization\n");
@@ -893,7 +768,7 @@ void testOneDataset(
                     newCables = sampleNewCable(ptcCables+j, NUM_NEW_CABLES, RHO_STD, RP_dBm, Ang_plot, M, N, x0, &svm); 
                     if (ptcCables[j].isCable != true)
                     {
-                        maxJ = j;                       
+                        maxJ = j;
                     }
                     else
                     {
@@ -907,19 +782,16 @@ void testOneDataset(
                     }
                 }
             }
-            
+
             printCable(ptcCables, NUM_PARTICLES);
-            
-            
-            
+
             // resample
             normalizeWeights(ptcs, NUM_PARTICLES);
             ptcsn = resample(ptcs, NUM_PARTICLES);
             freeParticles(ptcs, NUM_PARTICLES);
             free(ptcs);
             ptcs = ptcsn;
-            
-            
+
             if (maxJ > -1)
             {
                 if (updateParticleTracker(ptcs, NUM_PARTICLES, newCables, 2*NUM_NEW_CABLES))
@@ -936,40 +808,44 @@ void testOneDataset(
                     printf("tracker UPDATE FAILURE\n");
                 }
             }
-            
-            
-            // only let the first be red
-            
         }
 
-#ifdef SHOW_IMAGE
-        // show particles
-        oriImg2 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-        paintCvImage(RP_dBm, oriImg2, MagMin, MagMax, COLORMAP_JET);
-        if (newCables)
-            paintCables(oriImg2, newCables, 2*NUM_NEW_CABLES, 1, 0, hFactor);
-        paintCables(oriImg2, ptcCables, NUM_PARTICLES, 1, 1, hFactor);
-        dstImg2 = cvCreateImage(cvSize(N*wFactor, M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(oriImg2, dstImg2);
-        if (Ang_plot[0]<0)
-            cvFlip(dstImg2,NULL,1);
-        cvFlip(dstImg2);
-        //cvShowImage("UWCW:particle", dstImg2);
+        if (g_saveImage)
+        {
+            IplImage *oriImg2 = nullptr, *dstImg2 = nullptr;
+            IplImage *oriImg3 = nullptr, *dstImg3 = nullptr;
 
-        oriImg3 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-        paintCvImage(RP_dBm, oriImg3, MagMin, MagMax, COLORMAP_JET);
-        if (newCables)
-            paintCables(oriImg3, newCables, 2*NUM_NEW_CABLES, 0, 0, hFactor);
-        paintCables(oriImg3, ptcCables, NUM_PARTICLES, 0, 1, hFactor);
-        dstImg3 = cvCreateImage(cvSize(N*wFactor, M/hFactor), IPL_DEPTH_8U, 3);
-        cvResize(oriImg3, dstImg3);
-        if (Ang_plot[0]<0)
-            cvFlip(dstImg3,NULL,1);
-        cvFlip(dstImg3);
-        //cvShowImage("UWCW:particle_result", dstImg3);
-#endif
+            // show particles
+            oriImg2 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
+            paintCvImage(RP_dBm, oriImg2, MagMin, MagMax, COLORMAP_JET);
+            if (newCables)
+                paintCables(oriImg2, newCables, 2 * NUM_NEW_CABLES, 1, 0, hFactor);
+            paintCables(oriImg2, ptcCables, NUM_PARTICLES, 1, 1, hFactor);
+            dstImg2 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
+            cvResize(oriImg2, dstImg2);
+            if (Ang_plot[0] < 0)
+                cvFlip(dstImg2, NULL, 1);
+            cvFlip(dstImg2);
+            cvSaveImage(particleName, dstImg2);
 
-        
+            oriImg3 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
+            paintCvImage(RP_dBm, oriImg3, MagMin, MagMax, COLORMAP_JET);
+            if (newCables)
+                paintCables(oriImg3, newCables, 2 * NUM_NEW_CABLES, 0, 0, hFactor);
+            paintCables(oriImg3, ptcCables, NUM_PARTICLES, 0, 1, hFactor);
+            dstImg3 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
+            cvResize(oriImg3, dstImg3);
+            if (Ang_plot[0] < 0)
+                cvFlip(dstImg3, NULL, 1);
+            cvFlip(dstImg3);
+            cvSaveImage(particleResultName, dstImg3);
+
+            cvReleaseImage(&oriImg2);
+            cvReleaseImage(&dstImg2);
+            cvReleaseImage(&oriImg3);
+            cvReleaseImage(&dstImg3);
+        }
+
         freeLineArray(prevCable, prevNum);
         freeLineArray(ptcCables, NUM_PARTICLES);
         freeLineArray(newCables, 2*NUM_NEW_CABLES);
@@ -988,21 +864,6 @@ void testOneDataset(
 
         free(Ang_plot);
         free(RP_dBm);
-
-#ifdef SHOW_IMAGE
-        // opencv data
-        //cvWaitKey();
-        cvReleaseImage(&oriImg);
-        cvReleaseImage(&dstImg);
-        cvReleaseImage(&oriImg1);
-        cvReleaseImage(&dstImg1);
-        cvReleaseImage(&oriImg2);
-        cvReleaseImage(&dstImg2);
-        cvReleaseImage(&oriImg3);
-        cvReleaseImage(&dstImg3);
-        cvReleaseImage(&tImg1);
-        cvReleaseImage(&tImg2);
-#endif
     }
 
     for (int ii=0; ii<8; ii++)
@@ -1019,19 +880,13 @@ void testOneDataset(
     // clean tracker list
     rtracker_free_list(g_rtrackers_);
     g_rtrackers_ = NULL;
-    
+
     freeLineArray(prevCable, prevNum);
 
     freeParticles(ptcs, NUM_PARTICLES);
     freeParticles(ptcsn, NUM_PARTICLES);
     freeParticles(pResult, 1);
-    
-#ifdef SHOW_IMAGE
-    //cvDestroyWindow("UWCW:original");
-    //cvDestroyWindow("UWCW:result");
-    //cvDestroyWindow("UWCW:particles");
-    //cvDestroyWindow("UWCW:particles_result");
-#endif
+
     fclose(pTheta);
     fclose(pFirstRho);
     if (theta_particles) theta_free_particles(theta_particles, THETA_NUM_PARTICLES);
@@ -1040,19 +895,56 @@ void testOneDataset(
 
 void testAll(int start, int num);
 
+static const char szHelpInfo[] =
+    "uwcw dataset_start dataset_num [total_start] [particle_start] [-s]\n"
+    "\n"
+    "  dataset_start:\n"
+    "    start index of datasets to be tested (from 0)\n"
+    "\n"
+    "  dataset_num:\n"
+    "    total number of datasets to be tested\n"
+    "\n"
+    "  total_start:\n"
+    "    start frame for each dataset to be processed (default: 10001)\n"
+    "\n"
+    "  particle_start:\n"
+    "    start frame for each dataset to use particle filter (default: 10001)\n"
+    "\n"
+    "  -s\n"
+    "    save intermediate result images\n";
+
 int main(int argc, const char* argv[])
 {
-    //tester();
-    //main1();
     int start, num;
-    start = atoi(argv[1]);
-    num = atoi(argv[2]);
-    if (argc > 3)
-        TOTAL_START = atoi(argv[3]);
-    if (argc > 4)
-        PARTICLE_START = atoi(argv[4]);
-    //srand(time(NULL));
-    testAll(start, num);
+    bool parsed = false;
+
+    if (argc >= 3)
+    {
+        start = atoi(argv[1]);
+        num = atoi(argv[2]);
+        parsed = true;
+
+        int i = 3;
+        if (argc >= 5)
+        {
+            TOTAL_START = atoi(argv[i++]);
+            PARTICLE_START = atoi(argv[i++]);
+        }
+
+        if (argc > i && !strcmp(argv[i], "-s"))
+        {
+            g_saveImage = true;
+        }
+    }
+
+    if (parsed)
+    {
+        testAll(start, num);
+    }
+    else
+    {
+        printf("%s", szHelpInfo);
+    }
 
     return 0;
 }
@@ -1093,30 +985,32 @@ void testAll(int start, int num)
         "../Datasets/CFd20111004141759c1_N/CFd20111004141759c"
     };
 
-    const char* resultName[] = {
-        "../test/1Aresult.txt",
-        "../test/2Cresult.txt",
-        "../test/3Dresult.txt",
-        "../test/4Bresult.txt",
-        "../test/5Gresult.txt",
-        "../test/6Eresult.txt",
-        "../test/7Fresult.txt",
-        "../test/8Hresult.txt",
-        "../test/9Iresult.txt",
-        "../test/9Jresult.txt",
-        "../test/9Kresult.txt",
-        "../test/9Lresult.txt",
-        "../test/9Mresult.txt",
-        "../test/9Nresult.txt"
+    const char* resultNameBase[] = {
+        "../test/1A",
+        "../test/2C",
+        "../test/3D",
+        "../test/4B",
+        "../test/5G",
+        "../test/6E",
+        "../test/7F",
+        "../test/8H",
+        "../test/9I",
+        "../test/9J",
+        "../test/9K",
+        "../test/9L",
+        "../test/9M",
+        "../test/9N"
     };
 
     int tn[] = {49, 97, 149, 147, 148, 119, 118, 147, 1193, 1194, 297, 596, 1393, 596};
-        
+
     const char svmName[]  = "./svm.dat";
+    char resultName[256];
 
     for (int i=start; i<start+num; i++)
     {
-        testOneDataset(baseName[i], eachNameBase[i], svmName, tn[i], resultName[i]);
+        sprintf(resultName, "%sresult.txt", resultNameBase[i]);
+        testOneDataset(baseName[i], eachNameBase[i], svmName, tn[i], resultName, resultNameBase[i]);
     }
 }
 

@@ -45,7 +45,7 @@ extern int TOTAL_START;
 extern int FRAME_I;
 extern FILE* pRhoFile;
 
-
+extern bool g_saveImage;
 
 //#define OUTLIER_REJECT
 //#define REMOVE_TOWER
@@ -723,14 +723,16 @@ double getMaxTheta( int *BWcart,            // input b-n-w cartesian image
     nCable = simpleThetaDetect(theta_to_return, H2, rho, rhoLen, thetaLen, RP_dBm, BW, BWcart, Ang_plot, M0, N0, NC, x0, svm, rhoCable, isCable, 8, margin);
     memcpy(rhos, rhoCable, 8*sizeof(double));
     memcpy(status, isCable, 8*sizeof(int));
-    
-    
-    showImageIntRho(BWcart, M, NC, M>4000 ? .25 : .5, M>4000 ? .25 : .5, 0, 1, COLORMAP_JET, thetaDetectName, theta_to_return, rhoCable, isCable, 8);
+
+    if (g_saveImage)
+    {
+        showImageIntRho(BWcart, M, NC, M > 4000 ? .25 : .5, M > 4000 ? .25 : .5, 0, 1, COLORMAP_JET, thetaDetectName, theta_to_return, rhoCable, isCable, 8);
 
 #ifdef _DEBUG
-    showImageInt(H2, rhoLen, thetaLen, rhoLen>7000?0.125:0.25, 8, 0, 0, COLORMAP_JET, NULL, theta[maxIdx], true);
+        showImageInt(H2, rhoLen, thetaLen, rhoLen > 7000 ? 0.125 : 0.25, 8, 0, 0, COLORMAP_JET, NULL, theta[maxIdx], true);
 #endif
-    showImageInt(H2, rhoLen, thetaLen, rhoLen>7000?0.125:0.25, 8, 0, 0, COLORMAP_JET, houghName, theta[maxIdx], true);
+        showImageInt(H2, rhoLen, thetaLen, rhoLen > 7000 ? 0.125 : 0.25, 8, 0, 0, COLORMAP_JET, houghName, theta[maxIdx], true);
+    }
 
     if (rho) free(rho);
     if (H)   free(H);
@@ -1495,7 +1497,7 @@ int singleFrameDetect(double *RP_dBm,
     sliceThreshold(RP_dBm, M, N, BW, SLICE_HEIGHT, TH_PCT, TH_GATE, y1, y2, SLICE_WIDTH);
     getMaxVal(BW, M, N, &maxBefore, &dum1, &dum2);
     dum1 = sumArrayInt(BW, 0, M*N);
-    
+
     double hFa;
     if (M>4000)
         hFa = 0.25;
@@ -1503,14 +1505,16 @@ int singleFrameDetect(double *RP_dBm,
         hFa = 0.5;
     else
         hFa = 1;
-#ifdef _DEBUG
-    showImageBW(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0);
-    showImageInt(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0, 0);
-#endif
 
 
-    showImageInt(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0, 0, COLORMAP_JET, threshName);
-
+    if (g_saveImage)
+    {
+    #ifdef _DEBUG
+        showImageBW(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0);
+        showImageInt(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0, 0);
+    #endif
+        showImageInt(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0, 0, COLORMAP_JET, threshName);
+    }
 
 #ifdef OUTLIER_REJECT
     //outlier rejection
@@ -1594,18 +1598,22 @@ int singleFrameDetect(double *RP_dBm,
     fprintf(pRhoFile, "%f\n", rhoScore);
 
     int num_trackers2 = get_rtracker_num(g_rtrackers_);
-    showRtrackerImage(RP_dBm, BW, Ang_plot, M, N, x0, MagMax, MagMin, g_rtrackers_, num_trackers2, rhoDetectName, rhoScore>=.5);
 
+    // This seems to be the final result image
+    showRtrackerImage(RP_dBm, BW, Ang_plot, M, N, x0, MagMax, MagMin, g_rtrackers_, num_trackers2, rhoDetectName, rhoScore>=.5);
 
     fprintf(pTheta, "%4f\n", maxTheta);
     X0 = x0;
-#ifdef _DEBUG
-    showImageBW(BWcart, M, NC, hFa, hFa, Ang_plot[0]<0);
-    showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, NULL, maxTheta);
-#endif
-    //showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, maxTheta); // show direction
-    showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, -100);
-    
+
+    if (g_saveImage)
+    {
+    #ifdef _DEBUG
+        showImageBW(BWcart, M, NC, hFa, hFa, Ang_plot[0]<0);
+        showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, NULL, maxTheta);
+    #endif
+        //showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, maxTheta); // show direction
+        showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, -100);
+    }
 
     nLine = removeRepLines(lines, nLine);
 
@@ -1689,8 +1697,6 @@ int singleFrameDetect(double *RP_dBm,
         (*cLs)[i] = tmp[i];
     }
 
-    
-    
     // clean up
     if (tmp) free(tmp);
     if (BW) free(BW);
@@ -2612,7 +2618,7 @@ int rhoTrack(double theta, int *H, double *rho, int rhoLen, int thetaLen, double
     h = (int*)calloc(rhoLen, sizeof(int));
     for (i=0; i<rhoLen; i++)
     {
-            h[i] = H[i*thetaLen+idx];
+        h[i] = H[i*thetaLen+idx];
     }
     thresh = get_rho_thresh(h, rhoLen);
 
@@ -2630,10 +2636,13 @@ int rhoTrack(double theta, int *H, double *rho, int rhoLen, int thetaLen, double
     int *is_show = (int*)calloc(num_trackers2, sizeof(int));
     get_rtracker_rho(g_rtrackers_, rho_show, is_show);
     fprintf(pFirstRho, "%f\n", g_rtrackers_->next_ ? g_rtrackers_->next_->rho : 0);
-#ifdef _DEBUG
-    showImageIntRho(BWcart, M, NC, M>4000 ? .25 : .5, M>4000 ? .25 : .5, 0, 1, COLORMAP_JET, NULL, theta_show, rho_show, is_show, num_trackers2);
-#endif
 
+    if (g_saveImage)
+    {
+#ifdef _DEBUG
+        showImageIntRho(BWcart, M, NC, M > 4000 ? .25 : .5, M > 4000 ? .25 : .5, 0, 1, COLORMAP_JET, NULL, theta_show, rho_show, is_show, num_trackers2);
+#endif
+    }
 
     //showRtrackerImage(RP_dBm, BW, Ang_plot, M, N, x0, MagMax, MagMin, g_rtrackers_, num_trackers2, rhoDetectName, rhoScore>=.5);
 
