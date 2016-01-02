@@ -105,11 +105,6 @@ cableLine *rhoCableLine = NULL;
 cableLine *rhoCablePrev = NULL;
 FILE *pRhoFile = NULL;
 
-
-IplImage *pickMax(double *RP_dBm, int M, int N, int sliceHeight, int r);
-IplImage *regionFillMax(double *RP_dBm, int M, int N, int sliceHeight, double T);
-IplImage *threshMax(double *RP_dBm, int M,int N, double offset);
-
 // load base file
 void baseRead(const char* filename, double *Ang_endpt, double *MagMax,
               double *MagMin, double *fft_dR)
@@ -171,253 +166,6 @@ void eachRead(const char* filename, int *M, int *N,
     fclose(fp);
     free(buf);
 }
-
-/*
-void showOverlayCurves(int **BWBscope, int M, int N, double *lines, int num,
-                       double **Bscope, double *ang, int x0, svmData *svm)
-{
-    const unsigned char yellow[] = {255, 255, 0};
-    const unsigned char red[] = {255, 0, 0};
-    const unsigned char green[] = {0, 255, 0};
-    CImg<unsigned char>dispImg(N, M, 1, 3, 0);
-    for (int y=0; y<M; y++)
-    {
-        for (int x=0; x<N; x++)
-        {
-            
-            if (BWBscope[y][x])
-            {
-                for (int k=0; k<3; k++)
-                {
-                    dispImg(x,y,0,k)=255;
-                }
-            }
-            
-        }
-    }
-
-    // draw curves
-    double data[512];
-    int range[512];
-    int angle[512];
-    int dataNum;
-    double f[FEAT_SIZE];
-    double val;
-    double lval;
-    for (int i=0; i<num; i++)
-    {
-        dataNum = getLineData(Bscope, ang, M, N,BWBscope, x0,
-            lines[2*i], lines[2*i+1], data, range, angle);
-
-        computeFeature(data, dataNum, SPEC_SIZE, AUTO_SIZE, f, FEAT_SIZE);
-        lval = linearCalc(svm, f);
-        val = svmCalc(svm, f);
-
-        if (val<0 && lval>0.5)
-        {
-            for (int j=0; j<dataNum; j++)
-                dispImg.draw_point(angle[j], range[j], red);
-        }
-        else
-        {
-            for (int j=0; j<dataNum; j++)
-                dispImg.draw_point(angle[j], range[j], green);
-        }
-
-    }
-
-    CImgDisplay disp(dispImg);
-    while (!disp.is_closed() && !disp.is_keyARROWDOWN())
-        disp.wait();
-
-}
-
-*/
-/*
-void showOverlays(int **BWBscope, int M, int N, cableLine *cable, int num,
-                       double **Bscope, double *ang, svmData *svm)
-{
-    const unsigned char yellow[] = {255, 255, 0};
-    const unsigned char red[] = {255, 0, 0};
-    const unsigned char green[] = {0, 255, 0};
-    CImg<unsigned char>dispImg(N, M, 1, 3, 0);
-    for (int y=0; y<M; y++)
-    {
-        for (int x=0; x<N; x++)
-        {
-            
-            if (BWBscope[y][x])
-            {
-                for (int k=0; k<3; k++)
-                {
-                    dispImg(x,y,0,k)=255;
-                }
-            }
-            
-        }
-    }
-
-    // draw curves
-    int *range;
-    int *angle;
-    int dataNum;
-    for (int i=0; i<num; i++)
-    {
-        dataNum = cable[i].nPix;
-        //dataNum = getLineData(Bscope, ang, M, N,BWBscope, x0,
-        //  lines[2*i], lines[2*i+1], data, range, angle);
-
-        //computeFeature(data, dataNum, SPEC_SIZE, AUTO_SIZE, f, FEAT_SIZE);
-        //lval = linearCalc(svm, f);
-        //val = svmCalc(svm, f);
-
-        angle = cable[i].angle;
-        range = cable[i].range;
-        if (cable[i].isCable && cable[i].score>0.5)
-        {
-            for (int j=0; j<dataNum; j++)
-                dispImg.draw_point(angle[j], range[j], red);
-        }
-        else
-        {
-            for (int j=0; j<dataNum; j++)
-                dispImg.draw_point(angle[j], range[j], green);
-        }
-
-    }
-
-    CImgDisplay disp(dispImg);
-    while (!disp.is_closed() && !disp.is_keyARROWDOWN())
-        disp.wait();
-}
-*/
-
-
-/*void tester(void)
-{
-    char basename[] = "D:\\UW_Sun\\Bbase.dat";
-    char filename[] = "D:\\UW_Sun\\Datasets\\B_20090901T165047d1_B\\B_20090901T165047d10002.dat";
-    char svmname[]  = "D:\\UW_Sun\\svm.dat";
-
-    int M,N;
-    int i,num, sum, x0, NC, sliceSize, sliceOverlap, sliceLineNum;
-    double Ang_endpt, MagMax, MagMin, fft_dR, sumD;
-    double *Ang_plot = NULL;
-    double **RP_dBm = NULL;
-    int **BW = NULL;
-    int **BWcart = NULL;
-    cableLine *cable = NULL;
-    double *lines = NULL;
-    svmData svm;
-
-    baseRead(basename, &Ang_endpt, &MagMax, &MagMin, &fft_dR);
-    eachRead(filename, &M, &N, &Ang_plot, &RP_dBm);
-    svmRead(svmname, &svm);
-
-    BW = (int**)calloc(M, sizeof(int*));
-    for (i=0; i<M; i++)
-    {
-        BW[i] = (int*)calloc(N, sizeof(int));
-    }
-
-    // 1. thresholding
-    sliceThreshold(RP_dBm, M, N,BW, SLICE_HEIGHT, TH_PCT, TH_GATE, 0, M, allocateNew);
-    sum = sumImage(BW, M, N);
-
-
-    // 2. coordinate transform
-    coorTransform(BW, M, N, &BWcart, &NC, &x0, Ang_endpt, Ang_plot, 4, 0, M, allocateNew);
-    sum = sumImage(BWcart, M, N);
-
-    // 3. HT and line detection
-    sliceSize = (int)((double)M/16.0);
-    sliceOverlap = (int)((double)sliceSize/4.0);
-    sliceLineNum = 3*(int)(sliceSize/(double)(M/16.0)+0.5);
-    num = detectLines(BWcart, M, NC, 0, M, THETA, THETA_LEN, sliceSize, sliceOverlap, sliceLineNum, &lines, allocateNew);
-
-    num = removeRepLines(lines, num);
-
-    for (i=0; i<num; i++)
-    {
-        printf("%f %f\n", lines[2*i], lines[2*i+1]);
-    }
-
-    double lineData[512];
-    int lineRange[512];
-    int lineAngle[512];
-    double f[FEAT_SIZE];
-    double linearVal;
-    double svmVal;
-    int dataNum;
-
-    for (i=0; i<num; i++)
-    {
-        dataNum = getLineData(RP_dBm, Ang_plot, M, N,
-            BW, x0, lines[2*i], lines[2*i+1],
-            lineData, lineRange, lineAngle);
-        if (dataNum < 15)
-        {
-            linearVal = 0;
-            svmVal = 10;
-        }
-        computeFeature(lineData, dataNum, SPEC_SIZE, AUTO_SIZE, f, FEAT_SIZE);
-        // svm
-        linearVal = linearCalc(&svm, f);
-        svmVal = svmCalc(&svm, f);
-
-
-    }
-
-
-    for (i=0; i<M; i++)
-    {
-        if (BW[i]) free(BW[i]);
-        if (BWcart[i]) free(BWcart[i]);
-    }
-    if (BW) free(BW);
-    if (BWcart) free(BWcart);
-    if (lines) free(lines);
-}
-*/
-
-/*
-void main1(void)
-{
-    char basename[] = "D:\\UW_Sun\\Bbase.dat";
-    char filename[] = "D:\\UW_Sun\\Bframe90.dat";
-    char svmName[]  = "D:\\UW_Sun\\svm.dat";
-    
-    int M, N;
-    int i, num;
-    double Ang_endpt, MagMax, MagMin, fft_dR;
-    double *Ang_plot=NULL;
-    double **RP_dBm=NULL;
-    int **BW = NULL;
-    int **BWcart = NULL;
-    cableLine *cable = NULL;
-    svmData svm;
-
-    baseRead(basename, &Ang_endpt, &MagMax, &MagMin, &fft_dR);
-    eachRead(filename, &M, &N, &Ang_plot, &RP_dBm);
-    svmRead(svmName, &svm);
-
-
-    BW = (int**)malloc(sizeof(int*)*M);
-    for (i=0; i<M; i++)
-    {
-        BW[i] = (int*)malloc(sizeof(int)*N);
-    }
-
-    sliceThreshold(RP_dBm, M, N, BW, M/16, 98, -72, 0, M, allocateNew);
-
-    num = singleFrameDetect(RP_dBm, M, N, Ang_plot, Ang_endpt, &svm, 0, M, &cable, allocateNew);
-    showOverlays(BW, M, N, cable, num, RP_dBm, Ang_plot, &svm);
-    freeLineArray(cable, num);
-
-
-    return;
-}
-*/
 
 void paintCvImage(double *RP_dBm, IplImage *img, double magMin, double magMax, unsigned char COLORMAP[64][3])
 {
@@ -554,13 +302,12 @@ void testOneDataset(
     char particleResultName[256];
     int M, N, x0;
     int wFactor, hFactor;
-    int j, num(0), prevNum(0);
+    int num(0), prevNum(0);
     double Ang_endpt, MagMax, MagMin, fft_dR, score(0), prevScore(0);
     double *Ang_plot=NULL;
     double *RP_dBm=NULL;
     cableLine *cable = NULL;
     cableLine *prevCable = NULL;
-    cableLine *ptcCables = NULL;
     svmData svm;
     FILE *pFile, *pTime;
     clock_t time1, time2;
@@ -579,12 +326,6 @@ void testOneDataset(
     sprintf(timeName, "%s%s", resultName, "-time.txt");
     pTime = fopen(timeName, "w");
 
-    particle *ptcs = NULL, *ptcsn = NULL;
-
-    int CABLE_IDX = 0;  // 4: 10082, 0; 3: 10120, 2; 0: 10001, 7; 6: 10031, 8
-    cableLine *newCables = NULL;
-    int maxidx = 0;
-    particle *pResult = NULL;
     sprintf(thetaName, "%s_maxTheta.txt", eachNameBase);
     pTheta = fopen(thetaName, "w");
     sprintf(firstRhoName, "%s_firstRho.txt", eachNameBase);
@@ -703,157 +444,11 @@ void testOneDataset(
             cvReleaseImage(&tImg2);
         }
 
-        // particle filtering
-        ptcCables = (cableLine*)calloc(NUM_PARTICLES, sizeof(cableLine));
-
-        if (pResult)
-        {
-            freeParticles(pResult, 1);
-            pResult = NULL;
-        }
-
-        if (FRAME_I==PARTICLE_START)
-        {
-            fprintf(stdout, "\nPARTICLE FILTER initialization\n");
-            ptcs = init_distribution(cable[CABLE_IDX].rho, cable[CABLE_IDX].theta, NUM_PARTICLES);
-            for (j=0; j<NUM_PARTICLES; j++)
-            {
-                getParticleWeight(ptcs+j, RP_dBm, Ang_plot, M, N, x0, &svm, ptcCables+j);
-            }
-            normalizeWeights(ptcs, NUM_PARTICLES);
-            pResult = (particle*)calloc(1, sizeof(particle));
-            pResult->rho = ptcs[0].rho;
-            pResult->theta = ptcs[0].theta;
-            pResult->N = ptcs[0].N;
-            pResult->data = (double*)calloc(pResult->N, sizeof(double));
-            memcpy(pResult->data, ptcs[0].data, sizeof(double)*pResult->N);
-        }
-        else if(FRAME_I>PARTICLE_START)
-        {
-            fprintf(stdout, "\nPARTICLE FILTER tracking\n");
-            double maxWeight = 0;
-            double w;
-            int maxl = -1;
-            for (j=0; j<NUM_PARTICLES; j++)
-            {
-                ptcs[j] = transition(ptcs[j]);
-                w = getParticleWeight(&(ptcs[j]), RP_dBm, Ang_plot, M, N, x0, &svm, &(ptcCables[j]), pResult);
-                if (w>maxWeight)
-                {
-                    maxWeight = w;
-                    maxl = j;
-                }
-            }
-
-            //justifyWeights(ptcs, NUM_PARTICLES);
-
-            if (pResult)
-            {
-                freeParticles(pResult, 1);
-                pResult = NULL;
-            }
-            
-            int maxJ = -1;
-            maxidx = -1;
-            for (j=0; j<NUM_PARTICLES; j++)
-            {
-                if (j != maxl)
-                {
-                    ptcCables[j].isCable = false;
-                }
-                else
-                {
-                    //ptcCables[j].isCable = true;
-                    ptcCables[j].score = 1001;
-                    newCables = sampleNewCable(ptcCables+j, NUM_NEW_CABLES, RHO_STD, RP_dBm, Ang_plot, M, N, x0, &svm); 
-                    if (ptcCables[j].isCable != true)
-                    {
-                        maxJ = j;
-                    }
-                    else
-                    {
-                        maxidx = j;
-                        pResult = (particle*)calloc(1, sizeof(particle));
-                        pResult->rho = ptcCables[j].rho;
-                        pResult->theta = ptcCables[j].theta;
-                        pResult->N = ptcCables[j].nPix;
-                        pResult->data = (double*)calloc(pResult->N, sizeof(double));
-                        memcpy(pResult->data, ptcCables[j].data, pResult->N*sizeof(double));
-                    }
-                }
-            }
-
-            printCable(ptcCables, NUM_PARTICLES);
-
-            // resample
-            normalizeWeights(ptcs, NUM_PARTICLES);
-            ptcsn = resample(ptcs, NUM_PARTICLES);
-            freeParticles(ptcs, NUM_PARTICLES);
-            free(ptcs);
-            ptcs = ptcsn;
-
-            if (maxJ > -1)
-            {
-                if (updateParticleTracker(ptcs, NUM_PARTICLES, newCables, 2*NUM_NEW_CABLES))
-                {
-                    for (j=0; j<NUM_PARTICLES; j++)
-                    {
-                        getParticleWeight(ptcs+j, RP_dBm, Ang_plot, M, N, x0, &svm, ptcCables+j);
-                    }
-                    normalizeWeights(ptcs, NUM_PARTICLES);
-                    printf("\ntracker UPDATED SUCCESS\n");
-                }
-                else
-                {
-                    printf("tracker UPDATE FAILURE\n");
-                }
-            }
-        }
-
-        if (g_saveImage)
-        {
-            IplImage *oriImg2 = nullptr, *dstImg2 = nullptr;
-            IplImage *oriImg3 = nullptr, *dstImg3 = nullptr;
-
-            // show particles
-            oriImg2 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-            paintCvImage(RP_dBm, oriImg2, MagMin, MagMax, COLORMAP_JET);
-            if (newCables)
-                paintCables(oriImg2, newCables, 2 * NUM_NEW_CABLES, 1, 0, hFactor);
-            paintCables(oriImg2, ptcCables, NUM_PARTICLES, 1, 1, hFactor);
-            dstImg2 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
-            cvResize(oriImg2, dstImg2);
-            if (Ang_plot[0] < 0)
-                cvFlip(dstImg2, NULL, 1);
-            cvFlip(dstImg2);
-            cvSaveImage(particleName, dstImg2);
-
-            oriImg3 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-            paintCvImage(RP_dBm, oriImg3, MagMin, MagMax, COLORMAP_JET);
-            if (newCables)
-                paintCables(oriImg3, newCables, 2 * NUM_NEW_CABLES, 0, 0, hFactor);
-            paintCables(oriImg3, ptcCables, NUM_PARTICLES, 0, 1, hFactor);
-            dstImg3 = cvCreateImage(cvSize(N*wFactor, M / hFactor), IPL_DEPTH_8U, 3);
-            cvResize(oriImg3, dstImg3);
-            if (Ang_plot[0] < 0)
-                cvFlip(dstImg3, NULL, 1);
-            cvFlip(dstImg3);
-            cvSaveImage(particleResultName, dstImg3);
-
-            cvReleaseImage(&oriImg2);
-            cvReleaseImage(&dstImg2);
-            cvReleaseImage(&oriImg3);
-            cvReleaseImage(&dstImg3);
-        }
-
         freeLineArray(prevCable, prevNum);
-        freeLineArray(ptcCables, NUM_PARTICLES);
-        freeLineArray(newCables, 2*NUM_NEW_CABLES);
         prevCable = cable;
         cable = NULL;
         prevNum = num;
         prevScore = score;
-        newCables = NULL;
 
         // rho track free
         freeLineArray(rhoCablePrev, rhoNumPrev);
@@ -882,10 +477,7 @@ void testOneDataset(
     g_rtrackers_ = NULL;
 
     freeLineArray(prevCable, prevNum);
-
-    freeParticles(ptcs, NUM_PARTICLES);
-    freeParticles(ptcsn, NUM_PARTICLES);
-    freeParticles(pResult, 1);
+    freeLineArray(rhoCablePrev, rhoNumPrev);
 
     fclose(pTheta);
     fclose(pFirstRho);
@@ -939,6 +531,7 @@ int main(int argc, const char* argv[])
 
     if (parsed)
     {
+        srand(time(NULL));
         testAll(start, num);
     }
     else
@@ -1012,192 +605,6 @@ void testAll(int start, int num)
         sprintf(resultName, "%sresult.txt", resultNameBase[i]);
         testOneDataset(baseName[i], eachNameBase[i], svmName, tn[i], resultName, resultNameBase[i]);
     }
-}
-
-IplImage *pickMax(double *RP_dBm, int M, int N, int sliceHeight, int r)
-{
-    int i, j;
-    int maxI, maxJ;
-    double maxV;
-    int m1, m2;
-
-    IplImage *img = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 1);
-    uchar *imgData = (uchar*)img->imageData;
-    int stepSize = img->widthStep;
-    
-    m1 = 0;
-    m2 = m1+sliceHeight;
-    m2 = min(m2, M);
-
-    while (m1<M)
-    {
-        maxV = -100;
-        for (i=m1; i<m2; i++)
-        {
-            for (j=0; j<N; j++)
-            {
-                imgData[i*stepSize+j] = 0;
-                if (RP_dBm[i*N+j] > maxV)
-                {
-                    maxV = RP_dBm[i*N+j];
-                    maxI = i;
-                    maxJ = j;
-                }
-            }
-        }
-
-        for (i=max(0, maxI-r); i<=min(M-1, maxI+r); i++)
-        {
-            for (j=max(0, maxJ-r); j<=min(N-1, maxJ+r); j++)
-            {
-                imgData[i*stepSize+j] = 255;
-            }
-        }
-
-        m1 = m2;
-        m2 = m1 + sliceHeight;
-        m2 = min(m2, M);
-    }
-
-    return img;
-}
-
-IplImage *threshMax(double *RP_dBm, int M,int N, double offset)
-{
-    int i, j;
-    double T;
-    T = -1000;
-    double av = 0;
-
-    IplImage *img = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
-    uchar *imgData = (uchar*)img->imageData;
-    int stepSize = img->widthStep;
-    int maxI, maxJ;
-    
-    double *data = RP_dBm;
-    for (i=0; i<M; i++)
-    {
-        for (j=0; j<N; j++)
-        {
-            if (T<*data)
-            {
-                T = *data;
-                maxI = i;
-                maxJ = j;
-            }
-            av += *data;
-            data++;
-        }
-    }
-
-    av /= (M*N);
-    printf("\nmax = %f, avg = %f\n", T, av);
-
-    T = (3.*T+3.*av)/6;
-
-    data = RP_dBm;
-    for (i=0; i<M; i++)
-    {
-        for (j=0; j<N; j++)
-        {
-            if (*data >= T)
-            {
-                imgData[i*stepSize+j*3+0] = 255;
-                imgData[i*stepSize+j*3+1] = 255;
-                imgData[i*stepSize+j*3+2] = 255;
-            }
-            else
-            {
-                imgData[i*stepSize+j*3+0] = 0;
-                imgData[i*stepSize+j*3+1] = 0;
-                imgData[i*stepSize+j*3+2] = 0;
-            }
-            data++;
-        }
-    }
-
-    cvCircle(img, cvPoint(maxJ, maxI), 10, cvScalar(0, 0, 255));
-
-    return img;
-}
-
-IplImage *regionFillMax(double *RP_dBm, int M, int N, int sliceHeight, double T)
-{
-    int i, j;
-    int maxI, maxJ;
-    double maxV;
-    int m1, m2;
-    int *BW;
-    int rsize = 0;
-
-    IplImage *img = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 1);
-    uchar *imgData = (uchar*)img->imageData;
-    int stepSize = img->widthStep;
-    int xsize, ysize;
-    
-    m1 = 0;
-    m2 = m1+sliceHeight;
-    m2 = min(m2, M);
-
-    BW = (int*)calloc(M*N, sizeof(int));
-
-    if (M>4000 && N > 300)
-    {
-        size_lo = SIZE_LO_BASE * 4;
-        size_hi = SIZE_HI_BASE * 4;
-    }
-    else if (M>4000 || N>300)
-    {
-        size_lo = SIZE_LO_BASE * 2;
-        size_hi = SIZE_HI_BASE * 2;
-    }
-
-    while (m1<M)
-    {
-        maxV = -1000;
-        for (i=m1; i<m2; i++)
-        {
-            for (j=0; j<N; j++)
-            {
-                imgData[i*stepSize+j] = 0;
-                if (RP_dBm[i*N+j] > maxV)
-                {
-                    maxV = RP_dBm[i*N+j];
-                    maxI = i;
-                    maxJ = j;
-                }
-            }
-        }
-
-        if (maxV >= REGIONFILL_T)
-        {
-            rsize = regionFill(RP_dBm, BW, m1, m2, M, N, maxI, maxJ, T, &ysize, &xsize);
-            if (rsize<size_lo || rsize>size_hi) memset(BW+m1*N, 0, (m2-m1)*N*sizeof(int));
-
-            printf("region size = %d, size_lo = %d, size_hi = %d\n", rsize, size_lo, size_hi);
-            printf("M=%d, N=%d, ysize=%d, xsize=%d\n\n", M, N, ysize, xsize);
-        }
-
-
-        m1 = m2;
-        m2 = m1 + sliceHeight;
-        m2 = min(m2, M);
-
-        //cvCircle(img, cvPoint(maxJ, maxI), 10, cvScalar(255), 2);
-    }
-
-    for (i=0; i<M; i++)
-    {
-        for (j=0; j<N; j++)
-        {
-            if (imgData[j]<128 && BW[i*N+j]>1)
-                imgData[j] = 255;
-        }
-        imgData += stepSize;
-    }
-
-    return img;
-
 }
 
 int rhoTrackerToCable(rtracker *rtrackers_, int totalNum, cableLine **cls)
@@ -1289,7 +696,6 @@ void showRtrackerImage(double *RP_dBm, int *BW, double *Ang_plot, int M, int N, 
 
         rtrackers_ = rtrackers_->next_;
     }
-
     
     IplImage *tImg1 = cvCreateImage(cvSize(N, M), IPL_DEPTH_8U, 3);
     paintCvImage(RP_dBm, tImg1, MagMin, MagMax, COLORMAP_JET);
@@ -1300,4 +706,6 @@ void showRtrackerImage(double *RP_dBm, int *BW, double *Ang_plot, int M, int N, 
         cvFlip(tImg2, NULL, 1);
     cvFlip(tImg2);
     cvSaveImage(nameToSave, tImg2);
+
+    freeLineArray(cls, totalNum);
 }

@@ -263,7 +263,6 @@ double uwStd(double *data, int dataLen);
 
 void printArray(double *data, int size);
 
-
 //////////////////////////////////////////////////////////////////////////////
 // SVM related function
 //////////////////////////////////////////////////////////////////////////////
@@ -274,10 +273,7 @@ void svmFree(svmData *svm);
 double svmCalc(svmData *svm, double *f);
 double linearCalc(svmData *svm, double *f);
 
-
-void freeLines(cableLine *cL);
-void freeLineArray(cableLine *cLs, int num);
-
+void freeLineArray(cableLine *&cLs, int num);
 
 // cLs will be located within
 // returns number of cables found
@@ -328,23 +324,9 @@ void voteTheta(cableLine *cables, int cableNum);
 
 int thetaToIdx(double theta);
 
-void rejectThreshOutlier(int *BW, int *BW2, int M, int N);
-
-int regionFill(double *RP_dBm, int *BW, // input and output; 2 means filled; return region size
-    int y1, int y2, int M, int N,       // image size and processing range
-    int ys, int xs,                     // seed position
-    double T,                           // continuity constraint threshold
-    int *ysize, int *xsize,             // return y dimension size and x dimension size
-    int Nnb = 8);                       // connectivity, default 8-connected
-
 double getAvg(double *RP_dBm, int M, int N,
     int ys, int xs,
     int r, int ss = 1);
-
-//removeTower(RP_dBm, BW, M, N, M/16, 15, size_lo, size_hi);
-void removeTower(double *RP_dBm, int *BW,
-    int M, int N, int sliceHeight, double T,
-    int size_lo, int size_hi);
 
 int dcomp(const void *a, const void *b);
 

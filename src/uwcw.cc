@@ -47,9 +47,6 @@ extern FILE* pRhoFile;
 
 extern bool g_saveImage;
 
-//#define OUTLIER_REJECT
-//#define REMOVE_TOWER
-
 int X0 = 0;
 extern FILE *pTheta;
 extern FILE *pFirstRho;
@@ -212,7 +209,7 @@ double slicePercent(double *Bscope, // input Bscope image
     }
 
     // sort the array
-    QSort(sliceData, 0, M2*N2-1);
+    qsort(sliceData, M2*N2, sizeof(double), dcomp);
     i = (int)((double)M2*(double)N2*percentage/100.0);
 
     // get percentile
@@ -259,7 +256,6 @@ double blockPercent(double *Bscope,
         }
     }
 
-    //QSort(blockData, 0, M2*N2-1);
     qsort(blockData, M2*N2, sizeof(double), dcomp);
     i = (int)((double)M2*(double)N2*percentage/100.0);
 
@@ -273,70 +269,6 @@ double blockPercent(double *Bscope,
 
     free(blockData);
     return T;
-}
-
-
-int partition(double *data, int low, int high)
-{
-    int mid;
-    double tmp, pivotVal;
-
-    mid = (int)((low+high)/2);
-    if (data[low]>data[mid] && data[low]>data[high])
-    {
-        if (data[mid]>data[high]) // mid is pivotVal
-        {
-            tmp = data[mid];
-            data[mid] = data[low];
-            data[low] = tmp;
-        }
-        else    // high is pivotVal
-        {
-            tmp = data[high];
-            data[high] = data[low];
-            data[low] = tmp;
-        }
-    }
-    else if (data[low]<data[mid] && data[low]<data[high])
-    {
-        if (data[mid]<data[high])   // mid is pivotVal
-        {
-            tmp = data[mid];
-            data[mid] = data[low];
-            data[low] = tmp;
-        }
-        else
-        {
-            tmp = data[high];
-            data[high] = data[low];
-            data[low] = tmp;
-        }
-    }
-    
-    pivotVal = data[low];
-    
-    while (low < high)
-    {
-        while (low<high && data[high]>=pivotVal) --high;
-        data[low]=data[high];
-        while (low<high && data[low]<=pivotVal) ++low;
-        data[high]=data[low];
-    }
-    
-    data[low]=pivotVal;
-    return low;
-}
-
-
-void QSort(double *data, int low, int high)
-{
-    int pivotLoc;
-    if (low < high)
-    {
-        pivotLoc = partition(data, low, high);
-        QSort(data, low, pivotLoc-1);
-        QSort(data, pivotLoc+1, high);
-    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -640,8 +572,6 @@ double getMaxTheta( int *BWcart,            // input b-n-w cartesian image
     H2 = (int*)calloc(rhoLen*thetaLen, sizeof(int));
     memcpy(H2, H, rhoLen*thetaLen*sizeof(int));
     
-    
-
 
     // get theta sum
     maxSum = -1;
@@ -728,9 +658,6 @@ double getMaxTheta( int *BWcart,            // input b-n-w cartesian image
     {
         showImageIntRho(BWcart, M, NC, M > 4000 ? .25 : .5, M > 4000 ? .25 : .5, 0, 1, COLORMAP_JET, thetaDetectName, theta_to_return, rhoCable, isCable, 8);
 
-#ifdef _DEBUG
-        showImageInt(H2, rhoLen, thetaLen, rhoLen > 7000 ? 0.125 : 0.25, 8, 0, 0, COLORMAP_JET, NULL, theta[maxIdx], true);
-#endif
         showImageInt(H2, rhoLen, thetaLen, rhoLen > 7000 ? 0.125 : 0.25, 8, 0, 0, COLORMAP_JET, houghName, theta[maxIdx], true);
     }
 
@@ -812,11 +739,6 @@ int detectLines( int *BWcart,           // input b-n-w cartesian image
         }
 
         houghTransform(BWcart, MC, NC, y1, y2, rho, rhoLen, theta, thetaLen, H);
-
-        // debug code
-        double dumVal;
-        int dum1, dum2;
-        getMaxVal(H, rhoLen, thetaLen, &dumVal, &dum1, &dum2);
 
         // peaks identification, hGate and nHoodSize, return line
         nHood1 = (double)rhoLen/100.;
@@ -1094,7 +1016,7 @@ void computeFeature(double *data,       // input data
     sortData = (double*)calloc(dataSize, sizeof(double));
     memcpy(sortData, data, dataSize*sizeof(double));
 
-    QSort(sortData, 0, dataSize-1);
+    qsort(sortData, dataSize, sizeof(double), dcomp);
 
     feature[2] = sumArray(data, 0, dataSize)/(double)dataSize;
     feature[3] = sortData[dataSize-1];
@@ -1120,7 +1042,7 @@ void computeFeature(double *data,       // input data
     }
     autoCorrelation(autoData, autoSize, autoCo);
     feature[13] = sumArray(autoCo, 0, autoSize)/(double)autoSize;   // mean
-    QSort(autoCo, 0, autoSize-1);
+    qsort(autoCo, autoSize, sizeof(double), dcomp);
     
     // median
     if (autoSize % 2)       // exact median
@@ -1431,13 +1353,6 @@ double linearCalc(svmData *svm, double *f)
     return val;
 }
 
-void freeLines(cableLine *cL)
-{
-    if (cL->data) free(cL->data);
-    if (cL->range) free(cL->range);
-    if (cL->angle) free(cL->angle);
-}
-
 int sumArrayInt(int *data, int n1, int n2)
 {
     int sum = 0;
@@ -1472,8 +1387,6 @@ int singleFrameDetect(double *RP_dBm,
     double svmVal, linearVal;
     cableLine *tmp = NULL;
     double *lines = NULL;
-    double maxBefore;
-    int dum1, dum2;
     double ratio;
 
     int NC, x0;
@@ -1495,8 +1408,6 @@ int singleFrameDetect(double *RP_dBm,
     BW = (int*)calloc(M*N, sizeof(int));
     if (M>4000) HGATE_FACTOR = 24;
     sliceThreshold(RP_dBm, M, N, BW, SLICE_HEIGHT, TH_PCT, TH_GATE, y1, y2, SLICE_WIDTH);
-    getMaxVal(BW, M, N, &maxBefore, &dum1, &dum2);
-    dum1 = sumArrayInt(BW, 0, M*N);
 
     double hFa;
     if (M>4000)
@@ -1516,40 +1427,6 @@ int singleFrameDetect(double *RP_dBm,
         showImageInt(BW, M, N, hFa, N>300 ? 1 : 2, Ang_plot[0]<0, 0, COLORMAP_JET, threshName);
     }
 
-#ifdef OUTLIER_REJECT
-    //outlier rejection
-    BW2 = (int*)calloc(M*N, sizeof(int));
-    sliceThreshold(RP_dBm, M, N, BW2, SLICE_HEIGHT*2, TH_PCT2, TH_GATE, y1, y2);
-    rejectThreshOutlier(BW, BW2, M, N);
-#endif
-#ifdef _DEBUG
-#ifdef OUTLIER_REJECT
-    showImageBW(BW2, M, N, M>4000 ? 0.25 : 0.5, N>300 ? 1 : 2, Ang_plot[0]<0);
-    showImageInt(BW, M, N, M>4000 ? .25 : .5, N>300 ? 1 : 2, Ang_plot[0]<0, 0);
-#endif
-#endif
-
-#ifdef REMOVE_TOWER
-    size_lo = SIZE_LO_BASE;
-    size_hi = SIZE_HI_BASE;
-    if (M>4000 && N > 300)
-    {
-        size_lo = SIZE_LO_BASE * 4;
-        size_hi = SIZE_HI_BASE * 4;
-    }
-    else if (M>4000 || N>300)
-    {
-        size_lo = SIZE_LO_BASE * 2;
-        size_hi = SIZE_HI_BASE * 2;
-    }
-    removeTower(RP_dBm, BW, M, N, M/16, 15, size_lo, size_hi);
-    getMaxVal(BW, M, N, &maxAfter, &dum1, &dum2);
-#ifdef _DEBUG
-    showImageInt(BW, M, N, M>4000 ? .25 : .5, N>300 ? 1 : 2, Ang_plot[0]<0, 0);
-#endif
-#endif
-
-
     if (pFile)
         t2 = clock();
 
@@ -1565,12 +1442,6 @@ int singleFrameDetect(double *RP_dBm,
     coorTransform(BW, M, N, BWcart, &NC, &x0, Ang_endpt, Ang_plot,
         interFactor, y1, y2);       // check.
 
-    // debug code
-    getMaxVal(BWcart, M, NC, &maxBefore, &dum1, &dum2);
-    dum1 = sumArrayInt(BWcart, 0, M*NC);
-    dum1 = sumArrayInt(BWcart, 0, M*NC/2);
-    dum1 = sumArrayInt(BWcart, M*NC/2, M*NC);
-
     if (pFile)
         t3 = clock();
 
@@ -1584,9 +1455,7 @@ int singleFrameDetect(double *RP_dBm,
     lines = (double*)malloc(sizeof(double)*2*sliceNum*sliceLineNum);
 
     ratio = 1.0;
-#ifdef REMOVE_TOWER
-    ratio = maxBefore/maxAfter;
-#endif
+
     nLine = detectLines(BWcart, M, NC, y1, y2, THETA, THETA_LEN,
         sliceSize, sliceOverlap, sliceLineNum, lines, ratio);
 
@@ -1607,10 +1476,6 @@ int singleFrameDetect(double *RP_dBm,
 
     if (g_saveImage)
     {
-    #ifdef _DEBUG
-        showImageBW(BWcart, M, NC, hFa, hFa, Ang_plot[0]<0);
-        showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, NULL, maxTheta);
-    #endif
         //showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, maxTheta); // show direction
         showImageInt(BWcart, M, NC, hFa, hFa, 0, 1, COLORMAP_JET, transName, -100);
     }
@@ -1667,23 +1532,6 @@ int singleFrameDetect(double *RP_dBm,
             memcpy(tmp[nCable].angle, lineAngle, dataNum*sizeof(int));
             nCable++;
         }
-#ifdef _DEBUG_SHOW_NON_CABLES
-        else
-        {
-            tmp[nCable].isCable = false;
-            tmp[nCable].score = linearVal;
-            tmp[nCable].rho = lines[2*i];
-            tmp[nCable].theta = lines[2*i+1];
-            tmp[nCable].nPix = dataNum;
-            tmp[nCable].data = (double*)calloc(dataNum, sizeof(double));
-            tmp[nCable].range = (int*)calloc(dataNum, sizeof(int));
-            tmp[nCable].angle = (int*)calloc(dataNum, sizeof(int));
-            memcpy(tmp[nCable].data, lineData, dataNum*sizeof(double));
-            memcpy(tmp[nCable].range, lineRange, dataNum*sizeof(int));
-            memcpy(tmp[nCable].angle, lineAngle, dataNum*sizeof(int));
-            nCable++;
-        }
-#endif
     }
     
     // copy back
@@ -1717,22 +1565,24 @@ int singleFrameDetect(double *RP_dBm,
     return nCable;
 }
 
-void freeLineArray(cableLine *cLs, int num)
+void freeLineArray(cableLine *&cLs, int num)
 {
-    int i;
     if (cLs)
     {   
-        for (i=0; i<num; i++)
+        for (int i=0; i<num; i++)
         {
             if (cLs[i].data) free(cLs[i].data);
             if (cLs[i].angle) free(cLs[i].angle);
             if (cLs[i].range) free(cLs[i].range);
+            cLs[i].data = NULL;
+            cLs[i].angle = NULL;
+            cLs[i].range = NULL;
         }
+
+        free(cLs);
+        cLs = NULL;
     }
-
-    if (cLs) free(cLs);
 }
-
 
 // calculate the frame score from detection results of two frames
 double doubleFrameScore(cableLine *current, int currentNum,
@@ -1924,47 +1774,6 @@ int removeRepLines(double *cLs, int num)
     return newNum;
 }
 
-
-void showImageBW(int *data, int height, int width, double hFactor, double wFactor, int flipLR)
-{
-    int nCh = 1;
-    IplImage *img = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, nCh);
-    uchar *imgData = (uchar*)img->imageData;
-    int wstep = img->widthStep;
-    int i, j;
-
-    for (j=0; j<height; j++)
-    {
-        for (i=0; i<width; i++)
-        {
-            if (data[j*width+i])
-            {
-                imgData[i*nCh+0] = 255;
-            }
-            else
-            {
-                imgData[i*nCh+0] = 0;
-            }
-        }
-        imgData += wstep;
-    }
-
-    IplImage *img2 = cvCreateImage(cvSize(int(width*wFactor), int(height*hFactor)), IPL_DEPTH_8U, nCh);
-    cvResize(img,img2);
-
-    cvFlip(img2);
-    if (flipLR) cvFlip(img2, NULL, 1);
-
-    cvSaveImage("threshBW.png", img2);
-
-    cvNamedWindow("test window");
-    cvShowImage("test window", img2);
-    cvWaitKey();
-    cvReleaseImage(&img);
-    cvReleaseImage(&img2);
-    cvDestroyWindow("test window");
-}
-
 void showImageInt(int *data, int height, int width, double hFactor, double wFactor, int flipLR, int scale, unsigned char COLORMAP[64][3], const char *nm, double theta, bool bHough)
 {
     int nCh = 3;
@@ -2103,8 +1912,6 @@ void showImageInt(int *data, int height, int width, double hFactor, double wFact
     if (!bHough) cvFlip(img2);
     if (flipLR) cvFlip(img2, NULL, 1);
 
-    cvSaveImage("threshInt.png", img2);
-
     if (!nm)
     {
         cvNamedWindow("test window");
@@ -2213,8 +2020,6 @@ void showImageIntRho(int *data, int height, int width, double hFactor, double wF
     cvResize(img,img2);
 
     if (flipLR) cvFlip(img2, NULL, 1);
-
-    cvSaveImage("threshInt.png", img2);
 
     if (!nm)
     {
@@ -2349,160 +2154,6 @@ int thetaToIdx(double theta)
     return idx;
 }
 
-void rejectThreshOutlier(int *BW, int *BW2, int M, int N)
-{
-    int i, j;
-    for (i=0; i<M; i++)
-    {
-        for (j=0; j<N; j++)
-        {
-            if (*BW2) *BW = 0;
-            BW++;
-            BW2++;
-        }
-    }
-}
-
-
-int regionFill(double *RP_dBm, int *BW, // input and output; 2 means filled; return region size
-    int y1, int y2, int M, int N,       // image size and processing range
-    int ys, int xs,                     // seed position
-    double T,
-    int *ysize, int *xsize,
-    int Nnb)
-{
-    int Vnb[8][2] = {   // x, y 
-        { 0, -1},
-        { 0,  1},
-        {-1,  0},
-        { 1,  0},
-        {-1, -1},
-        { 1, -1},
-        {-1,  1},
-        { 1,  1}
-    };
-    
-    int szLnb = 1024;
-    int *pXnb = (int*)calloc(szLnb, sizeof(int));
-    int *pYnb = (int*)calloc(szLnb, sizeof(int));
-    int *pXtmp, *pYtmp;
-    int szObj = 0;
-    int ptLnb = 0;
-    int endLn = 0;
-    int i, x, y, x0, y0;
-    double sum = 0;
-    double val, avg;
-    double vMax;
-    int r;
-    int xstart, xend, ystart, yend;
-    int xrangelo, xrangehi, yrangelo, yrangehi;
-
-    xrangelo = XSIZE_LO;
-    xrangehi = XSIZE_HI;
-    yrangelo = YSIZE_LO;
-    yrangehi = YSIZE_HI;
-    if (M>4000) {yrangelo *= 2; yrangehi *= 2;}
-    if (N>300)  {xrangelo *= 2; xrangehi *= 2;}
-
-    xstart = xend = xs;
-    ystart = yend = ys;
-
-    r = 3;
-    if (M>4000) r = 5;
-
-    memset(BW+y1*N, 0, (y2-y1)*N*sizeof(int));
-    
-    // set the seed and add its neighbors
-    BW[ys*N+xs] = 2;
-    sum += RP_dBm[ys*N+xs];
-    //vMax = RP_dBm[ys*N+xs];
-    vMax = getAvg(RP_dBm, y2, N, ys, xs, r, 1);
-    vMax = (vMax + REGIONFILL_T)/2;
-    szObj++;
-    for (i=0; i<Nnb; i++)
-    {
-        x = xs + Vnb[i][0];
-        y = ys + Vnb[i][1];
-        if (x>=0 && x<N && y>=y1 && y<y2)
-        {
-            if (!BW[y*N+x])
-            {
-                BW[y*N+x] = 1;
-                pXnb[endLn] = x;
-                pYnb[endLn] = y;
-                endLn++;
-            }
-        }
-    }
-
-    // main process
-    while (ptLnb < endLn)
-    {
-        // see if the first in queue belongs to the object
-        avg = sum / szObj;
-        x0 = pXnb[ptLnb];
-        y0 = pYnb[ptLnb];
-        val = RP_dBm[y0*N+x0];
-
-        // if so, add it to the object list, and its neighbors to the list
-        if (val>=vMax-T)
-        {
-            BW[y0*N+x0] = 2;
-            sum += val;
-            szObj++;
-            if (x0<xstart) xstart = x0;
-            if (x0>xend) xend = x0;
-            if (y0<ystart) ystart = y0;
-            if (y0>yend) yend = y0;
-            if (xend-xstart+1 > xrangehi || yend-ystart+1 > yrangehi)
-            {
-                szObj = 10000;
-                break;
-            }
-            for (i=0; i<Nnb; i++)
-            {
-                x = x0 + Vnb[i][0];
-                y = y0 + Vnb[i][1];
-                if (x>=0 && x<N && y>=y1 && y<y2)
-                {
-                    if (!BW[y*N+x])
-                    {
-                        BW[y*N+x] = 1;
-                        pXnb[endLn] = x;
-                        pYnb[endLn] = y;
-                        endLn++;
-                    }
-                }
-            }
-        }
-
-        ptLnb++;
-
-        // if list too large, expand it
-        if (endLn+10 >= szLnb)
-        {
-            pXtmp = (int*)calloc(szLnb+1024, sizeof(int));
-            pYtmp = (int*)calloc(szLnb+1024, sizeof(int));
-            memcpy(pXtmp, pXnb, szLnb*sizeof(int));
-            memcpy(pYtmp, pYnb, szLnb*sizeof(int));
-            free(pXnb);
-            free(pYnb);
-            pXnb = pXtmp;
-            pYnb = pYtmp;
-            szLnb += 1024;
-        }
-    }
-
-    free(pXnb);
-    free(pYnb);
-
-    *xsize = xend-xstart+1;
-    *ysize = yend-ystart+1;
-    if (*xsize < xrangelo || *ysize < yrangelo)
-        szObj = 1;
-    return szObj;
-}
-
 double getAvg(double *RP_dBm, int M, int N,
     int ys, int xs,
     int r, int ss)
@@ -2525,80 +2176,6 @@ double getAvg(double *RP_dBm, int M, int N,
 
     return sum/num;
 }
-
-void removeTower(double *RP_dBm, int *BW,
-    int M, int N, int sliceHeight, double T,
-    int size_lo, int size_hi)
-{
-    int *BW2;
-    int y1, y2, ys, xs, rsize, i, j;
-    double vMax;
-    int *pData;
-    int *pMap;
-    int xsize, ysize;
-
-    y1 = 0;
-    y2 = y1+sliceHeight;
-    y2 = min(y2, M);
-
-    BW2 = (int*)calloc(M*N, sizeof(int));
-
-    while (y1<M)
-    {
-        vMax = -1000;
-        for (i=y1; i<y2; i++)
-        {
-            for (j=0; j<N; j++)
-            {
-                if (RP_dBm[i*N+j] > vMax)
-                {
-                    vMax = RP_dBm[i*N+j];
-                    ys = i;
-                    xs = j;
-                }
-            }
-        }
-
-        if (vMax >= REGIONFILL_T)
-        {
-            rsize = regionFill(RP_dBm, BW2, y1, y2, M, N, ys, xs, T, &ysize, &xsize);
-            if (rsize<size_lo || rsize>size_hi) 
-            {
-                memset(BW2+y1*N, 0, (y2-y1)*N*sizeof(int));
-                tower_removed = 1;
-            }
-        }
-
-
-        y1 = y2;
-        y2 = y1 + sliceHeight;
-        y2 = min(y2, M);
-    }
-
-#ifdef SHOW_IMAGE
-    showImageBW(BW2, M, N, M>4000 ? 0.25 : 0.5, N>300 ? 1 : 2, false);
-    showImageInt(BW, M, N, M>4000 ? .25 : .5, N>300 ? 1 : 2, false, 0);
-#endif
-
-
-    pData = BW;
-    pMap = BW2;
-    for (i=0; i<M; i++)
-    {
-        for (j=0; j<N; j++)
-        {
-            if (*pMap > 1)
-                *pData = 0;
-            pData++;
-            pMap++;
-        }
-    }
-
-#ifdef SHOW_IMAGE
-    showImageInt(BW, M, N, M>4000 ? .25 : .5, N>300 ? 1 : 2, false, 0);
-#endif
-}
-
 
 int rhoTrack(double theta, int *H, double *rho, int rhoLen, int thetaLen, double *RP_dBm, int *BW, int *BWcart, double *Ang_plot, double MagMax, double MagMin, int M, int N, int NC, int x0, svmData *svm, double *rhoCable, int *isCable, int numCable, int margin)
 {
