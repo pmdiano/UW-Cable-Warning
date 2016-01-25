@@ -1,6 +1,4 @@
 #include "inc.h"
-#include "uwcw.h"
-#include "particles.h"
 using namespace std;
 
 bool theta_first_frame = false;

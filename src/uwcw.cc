@@ -1,6 +1,4 @@
 #include "inc.h"
-#include "uwcw.h"
-#include "particles.h"
 using namespace std;
 
 double PTHETA[] = { -90, -89, -88, -87, -86, -85, -84, -83, -82, -81,
@@ -69,6 +67,9 @@ extern double theta_previous;
 
 // rho tracker stuff
 extern rtracker *g_rtrackers_;
+
+typedef ParticleFilter<ThetaParticle, double, ThetaObservation> ThetaParticleFilter;
+unique_ptr<ThetaParticleFilter> tpf;
 
 //////////////////////////////////////////////////////////////////////////////
 // slice-thresholding related function
@@ -626,19 +627,23 @@ double getMaxTheta( int *BWcart,            // input b-n-w cartesian image
     {       
         theta_previous = theta[maxIdx];
         if (theta_previous<0) theta_previous+=180;
-        theta_particles = theta_initialize_particles(THETA_NUM_PARTICLES, theta_previous, H2, rhoLen, thetaLen, maxIdx);
+        // theta_particles = theta_initialize_particles(THETA_NUM_PARTICLES, theta_previous, H2, rhoLen, thetaLen, maxIdx);
+
+        tpf = unique_ptr<ThetaParticleFilter>(new ThetaParticleFilter(THETA_NUM_PARTICLES, theta_previous));
     }
     else
     {
-        theta_transition_particles(theta_particles, THETA_NUM_PARTICLES, THETA_VARIANCE);
-        theta_compute_likelihood(theta_particles, THETA_NUM_PARTICLES, H2, rhoLen, thetaLen, &similarity_1);
-        theta_normalize_weights(theta_particles, THETA_NUM_PARTICLES);
-        tparticle *theta_particles_n = tresample(theta_particles, THETA_NUM_PARTICLES);
+        // theta_transition_particles(theta_particles, THETA_NUM_PARTICLES, THETA_VARIANCE);
+        // theta_compute_likelihood(theta_particles, THETA_NUM_PARTICLES, H2, rhoLen, thetaLen, &similarity_1);
+        // theta_normalize_weights(theta_particles, THETA_NUM_PARTICLES);
+        // tparticle *theta_particles_n = tresample(theta_particles, THETA_NUM_PARTICLES);
         
-        theta_free_particles(theta_particles, THETA_NUM_PARTICLES);
-        theta_particles = theta_particles_n;
-        theta_previous = theta_particles[0].theta;
-        theta_previous = (int)(theta_previous + 0.5);
+        // theta_free_particles(theta_particles, THETA_NUM_PARTICLES);
+        // theta_particles = theta_particles_n;
+        // theta_previous = theta_particles[0].theta;
+        // theta_previous = (int)(theta_previous + 0.5);
+
+        theta_previous = tpf->track(ThetaObservation(H2, rhoLen, thetaLen));
         theta_to_return = theta_previous;
     }
     

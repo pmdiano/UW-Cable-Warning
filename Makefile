@@ -4,7 +4,7 @@ CFLAGS = -I/usr/local/opt/opencv3/include -Wall --std=c++0x -g
 
 LDFLAGS = -lfftw3 -lm -L/usr/local/opt/opencv3/lib -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs
 
-SOURCES = src/cable.cc src/uwcw.cc src/particles.cc
+SOURCES = src/cable.cc src/uwcw.cc src/particles.cc src/theta_particle.cc
 
 OBJECTS = $(SOURCES:.cc=.o)
 
@@ -22,3 +22,6 @@ clean:
 	$(RM) $(OBJECTS)
 
 rebuild: clean all
+
+test:
+	$(CC) $(CFLAGS) $(LDFLAGS) src/radarimage.cpp
